@@ -5,7 +5,7 @@ import { db } from "@/lib/db"
 import bcrypt from "bcryptjs"
 import { UserRole } from "@prisma/client"
 
-const authOptions = {
+export const authOptions = {
   adapter: PrismaAdapter(db),
   providers: [
     CredentialsProvider({
@@ -74,6 +74,6 @@ const authOptions = {
   },
 }
 
-export { authOptions }
-export const handler = NextAuth(authOptions)
-export default authOptions
+const handler = NextAuth(authOptions)
+
+export { handler as GET, handler as POST }

@@ -17,7 +17,8 @@ export default withAuth(
     if (req.nextUrl.pathname.startsWith("/dashboard") || 
         req.nextUrl.pathname.startsWith("/channels") ||
         req.nextUrl.pathname.startsWith("/programs") ||
-        req.nextUrl.pathname.startsWith("/schedules")) {
+        req.nextUrl.pathname.startsWith("/schedules") ||
+        req.nextUrl.pathname.startsWith("/epg")) {
       if (!token) {
         return NextResponse.redirect(new URL("/auth/signin", req.url))
       }

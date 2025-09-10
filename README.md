@@ -102,6 +102,42 @@ src/
 └── prisma/                      # Database schema and migrations
 ```
 
+## 📸 Interface Screenshots
+
+### 🏠 Main Dashboard
+![EPG Dashboard](screenshots/epg-dashboard.png)
+*Clean, modern dashboard with real-time statistics and quick navigation*
+
+### 👤 User Authentication
+![Authentication](screenshots/authentication.png)
+*Secure login and registration with professional branding*
+
+### 📺 Channel Management
+![Channel Management](screenshots/channel-management.png)
+*Comprehensive channel management with edit/delete capabilities*
+
+### 🎬 Program Management
+![Program Management](screenshots/program-management.png)
+*Program management with copy functionality and categorization*
+
+### 📅 Schedule Management
+![Schedule Management](screenshots/schedule-management.png)
+*Advanced scheduling with calendar interface and timeline view*
+
+### 📤 EPG Export
+![EPG Export](screenshots/epg-export.png)
+*XML generation, download options, and hosted URL distribution*
+
+### 🛡️ Admin Panel
+![Admin Panel](screenshots/admin-panel.png)
+*System administration with user management and statistics*
+
+### 📱 Mobile Responsive Design
+![Mobile View](screenshots/mobile-view.png)
+*Touch-friendly mobile interface for on-the-go management*
+
+---
+
 ## 🎯 How to Use
 
 ### For TV Channel Streamers

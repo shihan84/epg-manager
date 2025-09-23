@@ -1,47 +1,73 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import authOptions from "@/lib/auth"
-import { db } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    const search = searchParams.get('search');
+
+    const whereClause: any = {
+      userId: session.user.id,
+    };
+
+    if (category) {
+      whereClause.category = category;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     const programs = await db.program.findMany({
-      where: { userId },
-      orderBy: { title: 'asc' }
-    })
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+    });
 
-    return NextResponse.json(programs)
-
+    return NextResponse.json(programs);
   } catch (error) {
-    console.error("Programs GET error:", error)
+    console.error('Get programs error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to fetch programs' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
-    const { title, description, category, duration, imageUrl, isRepeat } = await request.json()
+    const body = await request.json();
+    const {
+      title,
+      description,
+      category,
+      duration,
+      imageUrl,
+      thumbnailUrl,
+      language,
+      region,
+    } = body;
 
+    // Validate required fields
     if (!title) {
-      return NextResponse.json({ error: "Program title is required" }, { status: 400 })
+      return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
     const program = await db.program.create({
@@ -49,20 +75,21 @@ export async function POST(request: NextRequest) {
         title,
         description,
         category,
-        duration,
+        duration: duration ? parseInt(duration) : null,
         imageUrl,
-        isRepeat,
-        userId
-      }
-    })
+        thumbnailUrl,
+        language: language || 'en',
+        region: region || 'IN',
+        userId: session.user.id,
+      },
+    });
 
-    return NextResponse.json(program, { status: 201 })
-
+    return NextResponse.json(program, { status: 201 });
   } catch (error) {
-    console.error("Programs POST error:", error)
+    console.error('Create program error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to create program' },
       { status: 500 }
-    )
+    );
   }
 }

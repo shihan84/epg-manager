@@ -1,59 +1,74 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import authOptions from "@/lib/auth"
-import { db } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { db } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
-
     const channels = await db.channel.findMany({
-      where: { userId },
-      orderBy: { number: 'asc', name: 'asc' }
-    })
+      where: { userId: session.user.id },
+      orderBy: { createdAt: 'desc' },
+    });
 
-    return NextResponse.json(channels)
-
+    return NextResponse.json(channels);
   } catch (error) {
-    console.error("Channels GET error:", error)
+    console.error('Get channels error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to fetch channels' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
-    const { name, displayName, description, logoUrl, streamUrl, number, isActive } = await request.json()
+    const body = await request.json();
+    const {
+      name,
+      displayName,
+      description,
+      number,
+      logoUrl,
+      streamUrl,
+      language,
+      region,
+    } = body;
 
-    if (!name) {
-      return NextResponse.json({ error: "Channel name is required" }, { status: 400 })
+    // Validate required fields
+    if (!name || !displayName) {
+      return NextResponse.json(
+        { error: 'Name and display name are required' },
+        { status: 400 }
+      );
     }
 
-    // Check if channel name already exists for this user
-    const existingChannel = await db.channel.findFirst({
-      where: { 
-        userId, 
-        name 
+    // Check if channel number already exists for this user
+    if (number) {
+      const existingChannel = await db.channel.findFirst({
+        where: {
+          userId: session.user.id,
+          number: parseInt(number),
+        },
+      });
+
+      if (existingChannel) {
+        return NextResponse.json(
+          { error: 'Channel number already exists' },
+          { status: 400 }
+        );
       }
-    })
-
-    if (existingChannel) {
-      return NextResponse.json({ error: "Channel with this name already exists" }, { status: 400 })
     }
 
     const channel = await db.channel.create({
@@ -61,21 +76,21 @@ export async function POST(request: NextRequest) {
         name,
         displayName,
         description,
+        number: number ? parseInt(number) : null,
         logoUrl,
         streamUrl,
-        number,
-        isActive,
-        userId
-      }
-    })
+        language: language || 'en',
+        region: region || 'IN',
+        userId: session.user.id,
+      },
+    });
 
-    return NextResponse.json(channel, { status: 201 })
-
+    return NextResponse.json(channel, { status: 201 });
   } catch (error) {
-    console.error("Channels POST error:", error)
+    console.error('Create channel error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to create channel' },
       { status: 500 }
-    )
+    );
   }
 }

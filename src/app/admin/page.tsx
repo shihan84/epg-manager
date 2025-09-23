@@ -1,19 +1,39 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { signOut } from "next-auth/react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { 
-  Users, 
-  Settings, 
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Users,
+  Settings,
   LogOut,
   ArrowLeft,
   UserPlus,
@@ -24,135 +44,136 @@ import {
   Calendar,
   FileText,
   Shield,
-  Activity
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+  Activity,
+  CreditCard,
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface User {
-  id: string
-  email: string
-  name: string | null
-  role: string
-  companyName: string | null
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  companyName: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
   _count: {
-    channels: number
-    programs: number
-    schedules: number
-  }
+    channels: number;
+    programs: number;
+    schedules: number;
+  };
 }
 
 interface UserStats {
-  totalUsers: number
-  activeUsers: number
-  totalChannels: number
-  totalPrograms: number
-  totalSchedules: number
-  recentUsers: User[]
+  totalUsers: number;
+  activeUsers: number;
+  totalChannels: number;
+  totalPrograms: number;
+  totalSchedules: number;
+  recentUsers: User[];
 }
 
 export default function AdminPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const { toast } = useToast()
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { toast } = useToast();
   const [stats, setStats] = useState<UserStats>({
     totalUsers: 0,
     activeUsers: 0,
     totalChannels: 0,
     totalPrograms: 0,
     totalSchedules: 0,
-    recentUsers: []
-  })
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+    recentUsers: [],
+  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin")
-      return
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin');
+      return;
     }
 
-    if (status === "authenticated") {
-      if (session.user?.role !== "ADMIN") {
-        router.push("/dashboard")
-        return
+    if (status === 'authenticated') {
+      if (session.user?.role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
       }
-      fetchAdminData()
+      fetchAdminData();
     }
-  }, [status, session, router])
+  }, [status, session, router]);
 
   const fetchAdminData = async () => {
     try {
       const [statsResponse, usersResponse] = await Promise.all([
-        fetch("/api/admin/stats"),
-        fetch("/api/admin/users")
-      ])
+        fetch('/api/admin/stats'),
+        fetch('/api/admin/users'),
+      ]);
 
       if (statsResponse.ok) {
-        const statsData = await statsResponse.json()
-        setStats(statsData)
+        const statsData = await statsResponse.json();
+        setStats(statsData);
       }
 
       if (usersResponse.ok) {
-        const usersData = await usersResponse.json()
-        setUsers(usersData)
+        const usersData = await usersResponse.json();
+        setUsers(usersData);
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to load admin data",
-        variant: "destructive",
-      })
+        title: 'Error',
+        description: 'Failed to load admin data',
+        variant: 'destructive',
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const toggleUserStatus = async (userId: string, isActive: boolean) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}/toggle`, {
-        method: "PATCH",
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ isActive }),
-      })
+      });
 
       if (response.ok) {
         toast({
-          title: "Success",
+          title: 'Success',
           description: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
-        })
-        fetchAdminData()
+        });
+        fetchAdminData();
       } else {
-        const error = await response.json()
+        const error = await response.json();
         toast({
-          title: "Error",
-          description: error.error || "Failed to update user status",
-          variant: "destructive",
-        })
+          title: 'Error',
+          description: error.error || 'Failed to update user status',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "An error occurred while updating user status",
-        variant: "destructive",
-      })
+        title: 'Error',
+        description: 'An error occurred while updating user status',
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
-  }
+    signOut({ callbackUrl: '/' });
+  };
 
-  if (status === "loading" || loading) {
+  if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -170,12 +191,16 @@ export default function AdminPage() {
               </Link>
               <div className="flex items-center">
                 <Shield className="h-8 w-8 text-indigo-600 mr-3" />
-                <h1 className="text-2xl font-bold text-gray-900">Admin Panel</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Admin Panel
+                </h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session?.user?.name}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {session?.user?.name}
+                </p>
                 <Badge variant="default">Admin</Badge>
               </div>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
@@ -191,10 +216,20 @@ export default function AdminPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Admin Dashboard
+          </h2>
           <p className="text-gray-600">
             Manage users and monitor system-wide EPG data.
           </p>
+          <div className="mt-4 flex space-x-4">
+            <Link href="/admin/subscriptions">
+              <Button variant="outline">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Manage Subscriptions
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -206,54 +241,54 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Registered users
-              </p>
+              <p className="text-xs text-muted-foreground">Registered users</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Users
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.activeUsers}</div>
-              <p className="text-xs text-muted-foreground">
-                Active accounts
-              </p>
+              <p className="text-xs text-muted-foreground">Active accounts</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Channels</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Channels
+              </CardTitle>
               <Monitor className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalChannels}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all users
-              </p>
+              <p className="text-xs text-muted-foreground">Across all users</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Programs</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Programs
+              </CardTitle>
               <PlayCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalPrograms}</div>
-              <p className="text-xs text-muted-foreground">
-                Total programs
-              </p>
+              <p className="text-xs text-muted-foreground">Total programs</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Schedules</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Schedules
+              </CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -276,16 +311,21 @@ export default function AdminPage() {
           <CardContent>
             {stats.recentUsers.length > 0 ? (
               <div className="space-y-4">
-                {stats.recentUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                {stats.recentUsers.map(user => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                  >
                     <div>
                       <h4 className="font-medium">{user.name || user.email}</h4>
-                      <p className="text-sm text-gray-600">{user.companyName || 'No company'}</p>
+                      <p className="text-sm text-gray-600">
+                        {user.companyName || 'No company'}
+                      </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                     <div className="text-right">
-                      <Badge variant={user.isActive ? "default" : "secondary"}>
-                        {user.isActive ? "Active" : "Inactive"}
+                      <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                        {user.isActive ? 'Active' : 'Inactive'}
                       </Badge>
                       <p className="text-xs text-gray-500 mt-1">
                         {new Date(user.createdAt).toLocaleDateString()}
@@ -297,7 +337,9 @@ export default function AdminPage() {
             ) : (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No recent users</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No recent users
+                </h3>
                 <p className="text-gray-600">New users will appear here</p>
               </div>
             )}
@@ -308,9 +350,7 @@ export default function AdminPage() {
         <Card>
           <CardHeader>
             <CardTitle>All Users</CardTitle>
-            <CardDescription>
-              Manage all registered users
-            </CardDescription>
+            <CardDescription>Manage all registered users</CardDescription>
           </CardHeader>
           <CardContent>
             {users.length > 0 ? (
@@ -328,23 +368,33 @@ export default function AdminPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => (
+                  {users.map(user => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{user.name || 'N/A'}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="font-medium">
+                            {user.name || 'N/A'}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {user.email}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{user.companyName || '-'}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === "ADMIN" ? "destructive" : "default"}>
+                        <Badge
+                          variant={
+                            user.role === 'ADMIN' ? 'destructive' : 'default'
+                          }
+                        >
                           {user.role}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.isActive ? "default" : "secondary"}>
-                          {user.isActive ? "Active" : "Inactive"}
+                        <Badge
+                          variant={user.isActive ? 'default' : 'secondary'}
+                        >
+                          {user.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell>{user._count.channels}</TableCell>
@@ -355,9 +405,11 @@ export default function AdminPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => toggleUserStatus(user.id, !user.isActive)}
+                            onClick={() =>
+                              toggleUserStatus(user.id, !user.isActive)
+                            }
                           >
-                            {user.isActive ? "Deactivate" : "Activate"}
+                            {user.isActive ? 'Deactivate' : 'Activate'}
                           </Button>
                         </div>
                       </TableCell>
@@ -368,7 +420,9 @@ export default function AdminPage() {
             ) : (
               <div className="text-center py-8">
                 <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  No users found
+                </h3>
                 <p className="text-gray-600">No users have registered yet</p>
               </div>
             )}
@@ -376,5 +430,5 @@ export default function AdminPage() {
         </Card>
       </main>
     </div>
-  )
+  );
 }

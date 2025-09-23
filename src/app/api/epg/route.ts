@@ -1,59 +1,39 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import authOptions from "@/lib/auth"
-import { db } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { EPGGenerator } from '@/lib/epg-generator';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
+    // Get user's EPG URL
+    const epgUrl = await EPGGenerator.getHostedEPGUrl(session.user.id);
 
-    // Get the latest EPG file for the user
-    const latestEpg = await db.epgFile.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    if (!latestEpg) {
-      return NextResponse.json({
-        xmlContent: null,
-        hostedUrl: null,
-        lastGenerated: new Date().toISOString(),
-        totalChannels: 0,
-        totalPrograms: 0
-      })
-    }
-
-    // Get user's channels and schedules count
-    const [totalChannels, totalPrograms] = await Promise.all([
-      db.channel.count({ where: { userId, isActive: true } }),
-      db.schedule.count({
-        where: {
-          channel: {
-            userId
-          }
-        }
-      })
-    ])
+    // Check if user has an existing EPG
+    const hasEPG = await EPGGenerator.getLatestEPG(session.user.id);
 
     return NextResponse.json({
-      xmlContent: latestEpg.content,
-      hostedUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/epg/hosted/${userId}`,
-      lastGenerated: latestEpg.createdAt.toISOString(),
-      totalChannels,
-      totalPrograms
-    })
-
+      epgUrl: hasEPG ? epgUrl : null,
+      hasEPG: !!hasEPG,
+      format: 'xmltv',
+      generatedAt: hasEPG ? new Date().toISOString() : null,
+      downloadUrl: hasEPG
+        ? `${process.env.NEXTAUTH_URL}/api/epg/download/${session.user.id}`
+        : null,
+      expiresAt: hasEPG
+        ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+    });
   } catch (error) {
-    console.error("EPG GET error:", error)
+    console.error('EPG info error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to get EPG info' },
       { status: 500 }
-    )
+    );
   }
 }

@@ -1,111 +1,170 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import authOptions from "@/lib/auth"
-import { db } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { db } from '@/lib/db';
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
-    const channelId = params.id
-    const { name, displayName, description, logoUrl, streamUrl, number, isActive } = await request.json()
+    const { id } = await params;
+    const channel = await db.channel.findFirst({
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
+
+    if (!channel) {
+      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(channel);
+  } catch (error) {
+    console.error('Get channel error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch channel' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const {
+      name,
+      displayName,
+      description,
+      number,
+      logoUrl,
+      streamUrl,
+      language,
+      region,
+      isActive,
+    } = body;
 
     // Check if channel exists and belongs to user
     const existingChannel = await db.channel.findFirst({
-      where: { 
-        id: channelId,
-        userId 
-      }
-    })
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
 
     if (!existingChannel) {
-      return NextResponse.json({ error: "Channel not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
     }
 
-    // Check if channel name already exists for this user (excluding current channel)
-    if (name && name !== existingChannel.name) {
-      const nameExists = await db.channel.findFirst({
-        where: { 
-          userId, 
-          name,
-          id: { not: channelId }
-        }
-      })
+    // Check if channel number already exists for this user (if changing number)
+    if (number && number !== existingChannel.number) {
+      const duplicateChannel = await db.channel.findFirst({
+        where: {
+          userId: session.user.id,
+          number: parseInt(number),
+          id: { not: id },
+        },
+      });
 
-      if (nameExists) {
-        return NextResponse.json({ error: "Channel with this name already exists" }, { status: 400 })
+      if (duplicateChannel) {
+        return NextResponse.json(
+          { error: 'Channel number already exists' },
+          { status: 400 }
+        );
       }
     }
 
     const channel = await db.channel.update({
-      where: { id: channelId },
+      where: { id },
       data: {
-        name: name || existingChannel.name,
+        name,
         displayName,
         description,
+        number: number ? parseInt(number) : null,
         logoUrl,
         streamUrl,
-        number,
-        isActive
-      }
-    })
+        language: language || existingChannel.language || 'en',
+        region: region || existingChannel.region || 'IN',
+        isActive: isActive !== undefined ? isActive : existingChannel.isActive,
+      },
+    });
 
-    return NextResponse.json(channel)
-
+    return NextResponse.json(channel);
   } catch (error) {
-    console.error("Channel PUT error:", error)
+    console.error('Update channel error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to update channel' },
       { status: 500 }
-    )
+    );
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const session = await getServerSession(authOptions)
-    
+    const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = session.user.id
-    const channelId = params.id
-
+    const { id } = await params;
     // Check if channel exists and belongs to user
     const existingChannel = await db.channel.findFirst({
-      where: { 
-        id: channelId,
-        userId 
-      }
-    })
+      where: {
+        id,
+        userId: session.user.id,
+      },
+    });
 
     if (!existingChannel) {
-      return NextResponse.json({ error: "Channel not found" }, { status: 404 })
+      return NextResponse.json({ error: 'Channel not found' }, { status: 404 });
     }
 
-    // Delete associated schedules first
-    await db.schedule.deleteMany({
-      where: { channelId }
-    })
+    // Check if channel has schedules
+    const schedulesCount = await db.schedule.count({
+      where: { channelId: id },
+    });
 
-    // Delete the channel
+    if (schedulesCount > 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Cannot delete channel with existing schedules. Please delete schedules first.',
+        },
+        { status: 400 }
+      );
+    }
+
     await db.channel.delete({
-      where: { id: channelId }
-    })
+      where: { id },
+    });
 
-    return NextResponse.json({ message: "Channel deleted successfully" })
-
+    return NextResponse.json({ message: 'Channel deleted successfully' });
   } catch (error) {
-    console.error("Channel DELETE error:", error)
+    console.error('Delete channel error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to delete channel' },
       { status: 500 }
-    )
+    );
   }
 }

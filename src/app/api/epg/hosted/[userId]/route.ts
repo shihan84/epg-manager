@@ -1,33 +1,39 @@
-import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { NextRequest, NextResponse } from 'next/server';
+import { EPGGenerator } from '@/lib/epg-generator';
 
-export async function GET(request: NextRequest, { params }: { params: { userId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ userId: string }> }
+) {
   try {
-    const userId = params.userId
+    const { userId } = await params;
 
-    // Get the latest EPG file for the user
-    const latestEpg = await db.epgFile.findFirst({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    })
+    // Get the latest EPG for the user
+    const epgContent = await EPGGenerator.getLatestEPG(userId);
 
-    if (!latestEpg) {
-      return NextResponse.json({ error: "EPG not found" }, { status: 404 })
+    if (!epgContent) {
+      return NextResponse.json(
+        { error: 'No EPG found for this user' },
+        { status: 404 }
+      );
     }
 
-    // Return XML content
-    return new NextResponse(latestEpg.content, {
+    // Return XMLTV content with proper headers
+    return new NextResponse(epgContent, {
+      status: 200,
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
-      }
-    })
-
+        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
   } catch (error) {
-    console.error("Hosted EPG error:", error)
+    console.error('EPG hosting error:', error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: 'Failed to retrieve EPG' },
       { status: 500 }
-    )
+    );
   }
 }

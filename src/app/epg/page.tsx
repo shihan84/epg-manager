@@ -1,406 +1,540 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { signOut } from "next-auth/react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { 
-  Download, 
-  LogOut,
-  ArrowLeft,
-  FileText,
-  Share2,
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Download,
+  Globe,
+  RefreshCw,
+  Settings,
   Copy,
   ExternalLink,
-  RefreshCw
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+  Monitor,
+  Smartphone,
+  Tv,
+} from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
-interface EpgData {
-  xmlContent: string
-  hostedUrl: string | null
-  lastGenerated: string
-  totalChannels: number
-  totalPrograms: number
+interface EPGData {
+  epgUrl: string;
+  format: string;
+  generatedAt: string;
+  downloadUrl: string;
+  expiresAt: string;
 }
 
-export default function EpgPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const { toast } = useToast()
-  const [epgData, setEpgData] = useState<EpgData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [generating, setGenerating] = useState(false)
+interface EPGFormat {
+  id: string;
+  name: string;
+  description: string;
+  platform: string;
+  extension: string;
+  mimeType: string;
+  features: string[];
+  requirements: {
+    channels: boolean;
+    programs: boolean;
+    schedules: boolean;
+    images: boolean;
+    categories: boolean;
+    descriptions: boolean;
+  };
+}
+
+export default function EPGPage() {
+  const { data: session } = useSession();
+  const [epgData, setEpgData] = useState<EPGData | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [channels, setChannels] = useState<any[]>([]);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([]);
+  const [formats, setFormats] = useState<EPGFormat[]>([]);
+  const [selectedFormat, setSelectedFormat] = useState('xmltv');
+  const [includeImages, setIncludeImages] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin")
-      return
-    }
+    fetchChannels();
+    fetchEPGData();
+    fetchFormats();
+  }, []);
 
-    if (status === "authenticated") {
-      fetchEpgData()
-    }
-  }, [status, router])
-
-  const fetchEpgData = async () => {
+  const fetchChannels = async () => {
     try {
-      const response = await fetch("/api/epg")
+      const response = await fetch('/api/channels');
       if (response.ok) {
-        const data = await response.json()
-        setEpgData(data)
+        const data = await response.json();
+        setChannels(data);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load EPG data",
-        variant: "destructive",
-      })
-    } finally {
-      setLoading(false)
+      console.error('Failed to fetch channels:', error);
     }
-  }
+  };
 
-  const generateEpg = async () => {
-    setGenerating(true)
+  const fetchEPGData = async () => {
     try {
-      const response = await fetch("/api/epg/generate", {
-        method: "POST"
-      })
+      const response = await fetch('/api/epg');
+      if (response.ok) {
+        const data = await response.json();
+        setEpgData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch EPG data:', error);
+    }
+  };
+
+  const fetchFormats = async () => {
+    try {
+      const response = await fetch('/api/epg/formats');
+      if (response.ok) {
+        const data = await response.json();
+        setFormats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch EPG formats:', error);
+    }
+  };
+
+  const generateEPG = async () => {
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/epg/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          channels: selectedChannels.length > 0 ? selectedChannels : undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          format: selectedFormat,
+          includeImages,
+        }),
+      });
 
       if (response.ok) {
-        const data = await response.json()
-        setEpgData(data)
+        const data = await response.json();
+        setEpgData(data);
         toast({
-          title: "Success",
-          description: "EPG generated successfully",
-        })
+          title: 'EPG Generated',
+          description: 'Your EPG has been generated successfully!',
+        });
       } else {
-        const error = await response.json()
-        toast({
-          title: "Error",
-          description: error.error || "Failed to generate EPG",
-          variant: "destructive",
-        })
+        throw new Error('Failed to generate EPG');
       }
     } catch (error) {
+      console.error('EPG generation error:', error);
       toast({
-        title: "Error",
-        description: "An error occurred while generating EPG",
-        variant: "destructive",
-      })
+        title: 'Error',
+        description: 'Failed to generate EPG. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
-      setGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
-  const downloadEpg = () => {
-    if (!epgData?.xmlContent) return
-
-    const blob = new Blob([epgData.xmlContent], { type: "application/xml" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `epg-${new Date().toISOString().split('T')[0]}.xml`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
     toast({
-      title: "Success",
-      description: "EPG file downloaded successfully",
-    })
-  }
+      title: 'Copied',
+      description: 'URL copied to clipboard!',
+    });
+  };
 
-  const copyHostedUrl = async () => {
-    if (!epgData?.hostedUrl) return
-
-    try {
-      await navigator.clipboard.writeText(epgData.hostedUrl)
-      toast({
-        title: "Success",
-        description: "Hosted URL copied to clipboard",
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy URL",
-        variant: "destructive",
-      })
+  const downloadEPG = () => {
+    if (epgData?.downloadUrl) {
+      window.open(epgData.downloadUrl, '_blank');
     }
-  }
-
-  const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
-  }
-
-  if (status === "loading" || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    )
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard">
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Button>
-              </Link>
-              <div className="flex items-center">
-                <FileText className="h-8 w-8 text-indigo-600 mr-3" />
-                <h1 className="text-2xl font-bold text-gray-900">EPG Export</h1>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{session?.user?.name}</p>
-                <p className="text-xs text-gray-500">{session?.user?.companyName}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="container mx-auto py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">EPG Management</h1>
+        <p className="text-muted-foreground">
+          Generate and manage your Electronic Program Guide for distributors
+        </p>
+      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">EPG Export</h2>
-          <p className="text-gray-600">
-            Generate and download your Electronic Program Guide in XMLTV format, or get a hosted URL for your distributors.
-          </p>
-        </div>
+      <Tabs defaultValue="generate" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="generate">Generate EPG</TabsTrigger>
+          <TabsTrigger value="hosted">Hosted EPG</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+        </TabsList>
 
-        {/* EPG Stats */}
-        {epgData && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Channels</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{epgData.totalChannels}</div>
-                <p className="text-xs text-muted-foreground">
-                  Channels in EPG
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Programs</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{epgData.totalPrograms}</div>
-                <p className="text-xs text-muted-foreground">
-                  Scheduled programs
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Last Generated</CardTitle>
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg font-bold">
-                  {new Date(epgData.lastGenerated).toLocaleDateString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(epgData.lastGenerated).toLocaleTimeString()}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Action Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Generate EPG */}
+        <TabsContent value="generate" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <RefreshCw className="h-5 w-5 mr-2" />
-                Generate EPG
-              </CardTitle>
+              <CardTitle>Generate New EPG</CardTitle>
               <CardDescription>
-                Generate a new EPG file with your current channels and schedules
+                Create a new EPG file for your channels and programs
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={generateEpg} 
-                disabled={generating}
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="format">Platform & Format</Label>
+                    <Select
+                      value={selectedFormat}
+                      onValueChange={setSelectedFormat}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {formats.map(format => (
+                          <SelectItem key={format.id} value={format.id}>
+                            <div className="flex items-center space-x-2">
+                              {format.platform === 'Roku' && (
+                                <Tv className="h-4 w-4" />
+                              )}
+                              {format.platform === 'Kodi' && (
+                                <Monitor className="h-4 w-4" />
+                              )}
+                              {format.platform === 'JioTV' && (
+                                <Smartphone className="h-4 w-4" />
+                              )}
+                              {format.platform === 'Tata Play' && (
+                                <Tv className="h-4 w-4" />
+                              )}
+                              {format.platform === 'Plex' && (
+                                <Monitor className="h-4 w-4" />
+                              )}
+                              {format.platform === 'Universal' && (
+                                <Globe className="h-4 w-4" />
+                              )}
+                              <span>
+                                {format.name} ({format.platform})
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedFormat && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {
+                          formats.find(f => f.id === selectedFormat)
+                            ?.description
+                        }
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="channels">Channels (Optional)</Label>
+                    <div className="space-y-2 max-h-40 overflow-y-auto border rounded-md p-2">
+                      {channels.map(channel => (
+                        <div
+                          key={channel.id}
+                          className="flex items-center space-x-2"
+                        >
+                          <Checkbox
+                            id={channel.id}
+                            checked={selectedChannels.includes(channel.id)}
+                            onCheckedChange={checked => {
+                              if (checked) {
+                                setSelectedChannels([
+                                  ...selectedChannels,
+                                  channel.id,
+                                ]);
+                              } else {
+                                setSelectedChannels(
+                                  selectedChannels.filter(
+                                    id => id !== channel.id
+                                  )
+                                );
+                              }
+                            }}
+                          />
+                          <Label htmlFor={channel.id} className="text-sm">
+                            {channel.displayName || channel.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Leave empty to include all channels
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="startDate">Start Date (Optional)</Label>
+                    <Input
+                      id="startDate"
+                      type="datetime-local"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="endDate">End Date (Optional)</Label>
+                    <Input
+                      id="endDate"
+                      type="datetime-local"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="includeImages"
+                      checked={includeImages}
+                      onCheckedChange={checked => setIncludeImages(!!checked)}
+                    />
+                    <Label htmlFor="includeImages">Include Images</Label>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={generateEPG}
+                disabled={isGenerating}
                 className="w-full"
               >
-                {generating ? (
+                {isGenerating ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Generating EPG...
                   </>
                 ) : (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
+                    <Settings className="mr-2 h-4 w-4" />
                     Generate EPG
                   </>
                 )}
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
 
-          {/* Download EPG */}
+        <TabsContent value="hosted" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Download className="h-5 w-5 mr-2" />
-                Download EPG
-              </CardTitle>
+              <CardTitle>Hosted EPG URL</CardTitle>
               <CardDescription>
-                Download your EPG as an XML file compatible with most TV systems
+                Your permanent EPG URL that distributors can use
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Button 
-                onClick={downloadEpg} 
-                disabled={!epgData?.xmlContent}
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download XML File
-              </Button>
+            <CardContent className="space-y-4">
+              {epgData?.epgUrl ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <code className="text-sm font-mono break-all">
+                        {epgData.epgUrl}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyToClipboard(epgData.epgUrl)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Format</Label>
+                      <Badge variant="secondary">
+                        {epgData.format.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Generated</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(epgData.generatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Expires</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(epgData.expiresAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Actions</Label>
+                      <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(epgData.epgUrl, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={downloadEPG}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Globe className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    No EPG Generated
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Generate your first EPG to get your hosted URL
+                  </p>
+                  <Button onClick={() => generateEPG()}>Generate EPG</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
-        </div>
 
-        {/* Hosted EPG */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Share2 className="h-5 w-5 mr-2" />
-              Hosted EPG URL
-            </CardTitle>
-            <CardDescription>
-              Share this URL with your distributors for automatic EPG updates
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {epgData?.hostedUrl ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <code className="text-sm font-mono flex-1 truncate">
-                    {epgData.hostedUrl}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyHostedUrl}
-                    className="ml-2"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Badge variant="default">Active</Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(epgData.hostedUrl!, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Open URL
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <Share2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No hosted EPG yet</h3>
-                <p className="text-gray-600 mb-4">Generate your EPG first to get a hosted URL</p>
-                <Button onClick={generateEpg} disabled={generating}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Generate EPG
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* EPG Preview */}
-        {epgData?.xmlContent && (
-          <Card className="mt-8">
+          <Card>
             <CardHeader>
-              <CardTitle>EPG Preview</CardTitle>
+              <CardTitle>Platform Instructions</CardTitle>
               <CardDescription>
-                Preview of your generated EPG XML content
+                How to use your EPG URL with different platforms and devices
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="bg-gray-50 p-4 rounded-lg max-h-96 overflow-y-auto">
-                <pre className="text-xs text-gray-800 whitespace-pre-wrap">
-                  {epgData.xmlContent.substring(0, 1000)}
-                  {epgData.xmlContent.length > 1000 && '...'}
-                </pre>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Tv className="h-4 w-4" />
+                    <span>Roku Devices</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the Roku format for Roku Channel Store apps. The JSON
+                    format includes Roku-specific metadata.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Monitor className="h-4 w-4" />
+                    <span>Kodi</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Go to Settings → TV → General → Electronic Program Guide →
+                    XMLTV URL and enter your URL. Use the Kodi format for
+                    enhanced metadata.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Smartphone className="h-4 w-4" />
+                    <span>JioTV</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the JioTV format for Indian content with language
+                    support and regional features.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Tv className="h-4 w-4" />
+                    <span>Tata Play</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the Tata Play format for Tata Play (formerly Tata Sky)
+                    with regional content support.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Monitor className="h-4 w-4" />
+                    <span>Plex DVR</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the Plex format in your DVR settings to import program
+                    guide data with Plex-specific metadata.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center space-x-2">
+                    <Globe className="h-4 w-4" />
+                    <span>Universal IPTV Players</span>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the XMLTV format for most IPTV players. The M3U format
+                    provides playlist with channel information.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">
+                    TiviMate & Perfect Player
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the TiviMate or Perfect Player formats for enhanced
+                    metadata and better compatibility.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        )}
+        </TabsContent>
 
-        {/* Instructions */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle>How to Use Your EPG</CardTitle>
-            <CardDescription>
-              Learn how to integrate your EPG with different systems
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">For Direct Download:</h4>
-                <p className="text-sm text-gray-600">
-                  Download the XML file and upload it to your TV system or media server that supports XMLTV format.
-                </p>
+        <TabsContent value="settings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>EPG Settings</CardTitle>
+              <CardDescription>
+                Configure your EPG generation preferences
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="autoUpdate" defaultChecked />
+                  <Label htmlFor="autoUpdate">
+                    Auto-update EPG when schedules change
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="includeImages" defaultChecked />
+                  <Label htmlFor="includeImages">
+                    Include program images by default
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox id="notifyDistributors" />
+                  <Label htmlFor="notifyDistributors">
+                    Notify distributors when EPG is updated
+                  </Label>
+                </div>
               </div>
-              <div>
-                <h4 className="font-medium mb-2">For Hosted URL:</h4>
-                <p className="text-sm text-gray-600">
-                  Share the hosted URL with your distributors or integrate it with systems that support remote EPG URLs.
-                  The URL updates automatically when you generate new EPG data.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-medium mb-2">Supported Formats:</h4>
-                <p className="text-sm text-gray-600">
-                  Our EPG generator creates XMLTV format files compatible with most modern TV systems,
-                  including Kodi, Plex, Emby, Jellyfin, and many commercial TV platforms.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }

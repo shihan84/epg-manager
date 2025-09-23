@@ -1,478 +1,734 @@
-# 🚀 EPG Manager Deployment Guide
+# EPG Manager - Deployment Guide
 
-This guide provides step-by-step instructions for deploying the EPG Manager system to various platforms.
+**Professional Electronic Program Guide Management System**  
+_Ultimate News Web Media Production Pvt Ltd_
 
-## 📋 Prerequisites
+## Table of Contents
 
-Before deployment, ensure you have:
-- Node.js 18+ installed
-- A GitHub repository with the EPG Manager code
-- Database access (SQLite, PostgreSQL, or MySQL)
-- Deployment platform account (Vercel, Railway, etc.)
+1. [Prerequisites](#prerequisites)
+2. [Environment Setup](#environment-setup)
+3. [Platform-Specific Deployments](#platform-specific-deployments)
+   - [Vercel (Recommended)](#vercel-recommended)
+   - [Railway](#railway)
+   - [DigitalOcean App Platform](#digitalocean-app-platform)
+   - [AWS (EC2 + RDS)](#aws-ec2--rds)
+   - [Google Cloud Platform](#google-cloud-platform)
+   - [Docker Deployment](#docker-deployment)
+   - [Self-Hosted VPS](#self-hosted-vps)
+4. [Database Setup](#database-setup)
+5. [Environment Variables](#environment-variables)
+6. [SSL/HTTPS Configuration](#sslhttps-configuration)
+7. [Monitoring & Maintenance](#monitoring--maintenance)
+8. [Troubleshooting](#troubleshooting)
 
-## 🔧 Environment Configuration
+## Prerequisites
 
-### Required Environment Variables
+### System Requirements
+
+- **Node.js**: 18.0.0 or higher
+- **npm**: 8.0.0 or higher
+- **Git**: Latest version
+- **Database**: PostgreSQL, MySQL, or SQLite
+- **Memory**: Minimum 512MB RAM
+- **Storage**: Minimum 1GB free space
+
+### Required Accounts
+
+- **Vercel**: [vercel.com](https://vercel.com) (Free tier available)
+- **Railway**: [railway.app](https://railway.app) (Free tier available)
+- **DigitalOcean**: [digitalocean.com](https://digitalocean.com)
+- **AWS**: [aws.amazon.com](https://aws.amazon.com)
+- **Google Cloud**: [cloud.google.com](https://cloud.google.com)
+
+## Environment Setup
+
+### 1. Clone Repository
 
 ```bash
-# Database Configuration
-DATABASE_URL=your_database_connection_string
-
-# Authentication Configuration
-NEXTAUTH_URL=https://your-app-domain.com
-NEXTAUTH_SECRET=your_random_secret_key
-
-# Optional Configuration
-NEXT_PUBLIC_BASE_URL=https://your-app-domain.com
+git clone <repository-url>
+cd epg-manager
 ```
 
-### Generating NEXTAUTH_SECRET
+### 2. Install Dependencies
 
 ```bash
-# Generate a secure random secret
-openssl rand -base64 32
-# Or use online generator
+npm install
 ```
 
-## 🌟 Deployment Platforms
+### 3. Environment Variables
 
-### 1. Vercel (Recommended)
+Create `.env.local` file:
 
-#### Why Vercel?
-- ⚡ Fastest deployment for Next.js apps
-- 🌍 Global CDN and edge functions
-- 📊 Built-in analytics and monitoring
-- 🔧 Automatic SSL and custom domains
-- 💰 Generous free tier
+```env
+# Database
+DATABASE_URL="your-database-url"
 
-#### Step-by-Step Deployment
+# NextAuth
+NEXTAUTH_URL="https://your-domain.com"
+NEXTAUTH_SECRET="your-secret-key-here"
 
-**1. Connect to Vercel**
-```bash
-# Install Vercel CLI
-npm i -g vercel
+# Application
+NEXT_PUBLIC_BASE_URL="https://your-domain.com"
 
-# Login to Vercel
-vercel login
+# Redis (Optional - for caching)
+REDIS_HOST="your-redis-host"
+REDIS_PORT="6379"
+REDIS_PASSWORD="your-redis-password"
 
-# Deploy from project directory
-vercel
+# Email (Optional)
+EMAIL_SERVER_HOST="smtp.gmail.com"
+EMAIL_SERVER_PORT="587"
+EMAIL_SERVER_USER="your-email@gmail.com"
+EMAIL_SERVER_PASSWORD="your-app-password"
+EMAIL_FROM="noreply@your-domain.com"
 ```
 
-**2. Configure Project**
-- Connect your GitHub repository
-- Select the `epg-manager` repository
-- Vercel will auto-detect Next.js configuration
+## Platform-Specific Deployments
 
-**3. Set Environment Variables**
-In Vercel dashboard:
-- Go to Project → Settings → Environment Variables
-- Add the required environment variables:
-  ```
-  DATABASE_URL=postgresql://user:password@host:port/database
-  NEXTAUTH_URL=https://your-app.vercel.app
-  NEXTAUTH_SECRET=your-generated-secret
-  ```
+### Vercel (Recommended)
 
-**4. Database Setup**
+**Best for**: Quick deployment, automatic scaling, global CDN
 
-**Option A: Vercel Postgres (Recommended)**
-- In Vercel dashboard, go to Storage
-- Create a new Postgres database
-- Copy the connection string to `DATABASE_URL`
+#### Steps:
 
-**Option B: External Database**
-- Use existing PostgreSQL/MySQL database
-- Update `DATABASE_URL` accordingly
+1. **Connect Repository**
 
-**5. Deploy and Test**
-```bash
-# Trigger deployment
-vercel --prod
+   ```bash
+   npm i -g vercel
+   vercel login
+   vercel
+   ```
 
-# Check deployment status
-vercel logs
+2. **Configure Environment Variables**
+   - Go to Vercel Dashboard → Project Settings → Environment Variables
+   - Add all required environment variables
+
+3. **Database Setup**
+   - Use Vercel Postgres (recommended)
+   - Or external database (PlanetScale, Supabase, etc.)
+
+4. **Deploy**
+   ```bash
+   vercel --prod
+   ```
+
+#### Vercel Configuration (`vercel.json`):
+
+```json
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret"
+  }
+}
 ```
 
-**6. Post-Deployment**
-- Test all features in production
-- Set up custom domain in Vercel settings
-- Configure SSL (automatically handled)
-- Set up monitoring and alerts
+### Railway
 
-### 2. Railway
+**Best for**: Full-stack applications with database
 
-#### Why Railway?
-- 🚀 Developer-friendly deployment
-- 🗄️ Built-in database services
-- 💡 Automatic environment variables
-- 🔄 Continuous deployment
-- 💰 Free tier available
+#### Steps:
 
-#### Step-by-Step Deployment
+1. **Connect Repository**
+   - Go to [railway.app](https://railway.app)
+   - Click "New Project" → "Deploy from GitHub repo"
+   - Select your repository
 
-**1. Create Railway Account**
-- Sign up at [railway.app](https://railway.app)
-- Connect your GitHub account
+2. **Add Database**
+   - Click "New" → "Database" → "PostgreSQL"
+   - Railway will provide connection string
 
-**2. Create New Project**
-- Click "New Project"
-- Select "Deploy from GitHub repo"
-- Choose `epg-manager` repository
+3. **Configure Environment Variables**
+   - Go to Project Settings → Variables
+   - Add all required environment variables
 
-**3. Configure Service**
-- Railway will auto-detect Next.js
-- Verify build command: `npm run build`
-- Verify start command: `npm start`
+4. **Deploy**
+   - Railway automatically deploys on git push
+   - Monitor deployment in dashboard
 
-**4. Set Environment Variables**
-- Railway provides database automatically
-- Add additional variables:
-  ```env
-  NEXTAUTH_URL=${{RAILWAY_ENVIRONMENT.RAILWAY_PUBLIC_DOMAIN}}
-  NEXTAUTH_SECRET=${{RAILWAY_ENVIRONMENT.NEXTAUTH_SECRET}}
-  ```
+#### Railway Configuration (`railway.toml`):
 
-**5. Deploy**
-- Railway will automatically deploy on push
-- Your app will be available at Railway-provided URL
+```toml
+[build]
+builder = "nixpacks"
 
-### 3. Netlify
-
-#### Why Netlify?
-- 🌐 Global CDN network
-- 🔄 Continuous deployment
-- 🔧 Form handling and functions
-- 💰 Free tier available
-- 📝 Custom domain support
-
-#### Step-by-Step Deployment
-
-**1. Connect to Netlify**
-- Sign up at [netlify.com](https://netlify.com)
-- Connect your GitHub repository
-
-**2. Configure Build Settings**
-- Build command: `npm run build`
-- Publish directory: `.next`
-- Node version: 18 (or latest)
-
-**3. Environment Variables**
-- In Netlify dashboard → Site settings → Build & deploy → Environment
-- Add environment variables:
-  ```env
-  DATABASE_URL=your_database_url
-  NEXTAUTH_URL=https://your-app.netlify.app
-  NEXTAUTH_SECRET=your_secret_key
-  ```
-
-**4. Create Netlify Functions**
-Create `netlify/functions/nextjs.js`:
-```javascript
-const { handler } = require('./.next/serverless/entry.js')
-
-exports.handler = handler
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
 ```
 
-**5. Deploy**
-- Netlify will automatically deploy on push
-- Test API endpoints thoroughly
+### DigitalOcean App Platform
 
-### 4. DigitalOcean App Platform
+**Best for**: Production applications with managed services
 
-#### Why DigitalOcean?
-- 🌊 Scalable infrastructure
-- 💰 Competitive pricing
-- 🗄️ Managed databases
-- 📊 Monitoring and metrics
-- 🌍 Global data centers
+#### Steps:
 
-#### Step-by-Step Deployment
+1. **Create App**
+   - Go to DigitalOcean → Apps → Create App
+   - Connect GitHub repository
 
-**1. Create App**
-- Sign in to DigitalOcean Control Panel
-- Go to Apps → Create App
-- Connect your GitHub repository
+2. **Configure Build Settings**
 
-**2. Configure App**
-- Select `epg-manager` repository
-- Choose build command: `npm run build`
-- Choose run command: `npm start`
-- Select instance size (Basic tier for start)
+   ```yaml
+   name: epg-manager
+   services:
+     - name: web
+       source_dir: /
+       github:
+         repo: your-username/epg-manager
+         branch: main
+       run_command: npm start
+       environment_slug: node-js
+       instance_count: 1
+       instance_size_slug: basic-xxs
+       envs:
+         - key: NODE_ENV
+           value: production
+   ```
 
-**3. Environment Variables**
-- Add environment variables in app settings:
-  ```env
-  DATABASE_URL=your_database_url
-  NEXTAUTH_URL=https://your-app.ondigitalocean.app
-  NEXTAUTH_SECRET=your_secret_key
-  ```
+3. **Add Database**
+   - Create managed PostgreSQL database
+   - Add connection string to environment variables
 
-**4. Database Setup**
-- Create DigitalOcean Managed Database
-- Choose PostgreSQL or MySQL
-- Get connection string and update `DATABASE_URL`
+4. **Deploy**
+   - DigitalOcean automatically builds and deploys
+   - Monitor in App Platform dashboard
 
-**5. Deploy**
-- Click "Create Resources" and "Deploy"
-- Monitor deployment progress
+### AWS (EC2 + RDS)
 
-### 5. Self-Hosted Docker
+**Best for**: Enterprise applications with full control
 
-#### Why Self-Hosted?
-- 🏠 Complete control over infrastructure
-- 💰 No recurring costs (after initial setup)
-- 🔒 Enhanced security and privacy
-- 📊 Custom monitoring and scaling
+#### Steps:
 
-#### Step-by-Step Deployment
+1. **Launch EC2 Instance**
 
-**1. Create Dockerfile**
+   ```bash
+   # Launch Ubuntu 22.04 LTS
+   # Instance type: t3.micro (free tier) or t3.small
+   # Security group: Allow HTTP (80), HTTPS (443), SSH (22)
+   ```
+
+2. **Install Dependencies**
+
+   ```bash
+   # Update system
+   sudo apt update && sudo apt upgrade -y
+
+   # Install Node.js
+   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+
+   # Install PM2
+   sudo npm install -g pm2
+
+   # Install Nginx
+   sudo apt install nginx -y
+   ```
+
+3. **Deploy Application**
+
+   ```bash
+   # Clone repository
+   git clone <repository-url>
+   cd epg-manager
+
+   # Install dependencies
+   npm install
+
+   # Build application
+   npm run build
+
+   # Start with PM2
+   pm2 start npm --name "epg-manager" -- start
+   pm2 save
+   pm2 startup
+   ```
+
+4. **Configure Nginx**
+
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+5. **Setup RDS Database**
+   - Create PostgreSQL RDS instance
+   - Configure security groups
+   - Update DATABASE_URL
+
+### Google Cloud Platform
+
+**Best for**: Scalable applications with Google services
+
+#### Steps:
+
+1. **Create Project**
+
+   ```bash
+   gcloud projects create epg-manager-project
+   gcloud config set project epg-manager-project
+   ```
+
+2. **Enable APIs**
+
+   ```bash
+   gcloud services enable run.googleapis.com
+   gcloud services enable sqladmin.googleapis.com
+   ```
+
+3. **Deploy to Cloud Run**
+
+   ```bash
+   # Build and push container
+   gcloud builds submit --tag gcr.io/epg-manager-project/epg-manager
+
+   # Deploy to Cloud Run
+   gcloud run deploy epg-manager \
+     --image gcr.io/epg-manager-project/epg-manager \
+     --platform managed \
+     --region us-central1 \
+     --allow-unauthenticated
+   ```
+
+4. **Setup Cloud SQL**
+   - Create PostgreSQL instance
+   - Configure connection
+   - Update environment variables
+
+### Docker Deployment
+
+**Best for**: Containerized deployments, Kubernetes
+
+#### Dockerfile:
+
 ```dockerfile
-# Use official Node.js runtime
-FROM node:18-alpine
+FROM node:18-alpine AS base
 
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-
-# Install dependencies
+COPY package.json package-lock.json ./
 RUN npm ci --only=production
 
-# Copy application code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the application
 RUN npm run build
 
-# Expose port
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV production
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+USER nextjs
+
 EXPOSE 3000
 
-# Define environment variables
-ENV NODE_ENV=production
+ENV PORT 3000
 
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
 ```
 
-**2. Create docker-compose.yml**
+#### Docker Compose:
+
 ```yaml
 version: '3.8'
-
 services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/epg_manager
+      - DATABASE_URL=postgresql://user:password@db:5432/epgmanager
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=your-secret-key
+      - NEXTAUTH_SECRET=your-secret
     depends_on:
       - db
-    restart: unless-stopped
+      - redis
 
   db:
-    image: postgres:15-alpine
+    image: postgres:15
     environment:
-      - POSTGRES_DB=epg_manager
-      - POSTGRES_USER=epg_user
-      - POSTGRES_PASSWORD=your_password
+      - POSTGRES_DB=epgmanager
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
 
 volumes:
   postgres_data:
 ```
 
-**3. Build and Run**
+#### Deploy with Docker:
+
 ```bash
-# Build and start services
-docker-compose up -d --build
+# Build and run
+docker-compose up -d
 
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+# Or with Docker
+docker build -t epg-manager .
+docker run -p 3000:3000 epg-manager
 ```
 
-**4. Reverse Proxy (Optional)**
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
+### Self-Hosted VPS
 
-    location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_addrs;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+**Best for**: Full control, custom configurations
+
+#### Steps:
+
+1. **Server Setup**
+
+   ```bash
+   # Ubuntu 22.04 LTS
+   sudo apt update && sudo apt upgrade -y
+
+   # Install Node.js
+   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+
+   # Install PostgreSQL
+   sudo apt install postgresql postgresql-contrib -y
+
+   # Install Nginx
+   sudo apt install nginx -y
+
+   # Install Certbot for SSL
+   sudo apt install certbot python3-certbot-nginx -y
+   ```
+
+2. **Database Setup**
+
+   ```bash
+   sudo -u postgres psql
+   CREATE DATABASE epgmanager;
+   CREATE USER epguser WITH PASSWORD 'your-password';
+   GRANT ALL PRIVILEGES ON DATABASE epgmanager TO epguser;
+   \q
+   ```
+
+3. **Application Deployment**
+
+   ```bash
+   # Clone and setup
+   git clone <repository-url>
+   cd epg-manager
+   npm install
+   npm run build
+
+   # Install PM2
+   sudo npm install -g pm2
+
+   # Start application
+   pm2 start npm --name "epg-manager" -- start
+   pm2 save
+   pm2 startup
+   ```
+
+4. **Nginx Configuration**
+
+   ```nginx
+   server {
+       listen 80;
+       server_name your-domain.com;
+
+       location / {
+           proxy_pass http://localhost:3000;
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto $scheme;
+           proxy_cache_bypass $http_upgrade;
+       }
+   }
+   ```
+
+5. **SSL Certificate**
+   ```bash
+   sudo certbot --nginx -d your-domain.com
+   ```
+
+## Database Setup
+
+### PostgreSQL (Recommended)
+
+```sql
+-- Create database
+CREATE DATABASE epgmanager;
+
+-- Create user
+CREATE USER epguser WITH PASSWORD 'your-password';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE epgmanager TO epguser;
+
+-- Connect to database
+\c epgmanager;
+
+-- Run Prisma migrations
+npx prisma db push
 ```
 
-## 🔧 Database Setup
+### MySQL
 
-### SQLite (Development/Small Deployments)
+```sql
+-- Create database
+CREATE DATABASE epgmanager;
 
-**Setup:**
+-- Create user
+CREATE USER 'epguser'@'%' IDENTIFIED BY 'your-password';
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON epgmanager.* TO 'epguser'@'%';
+FLUSH PRIVILEGES;
+```
+
+### SQLite (Development)
+
 ```bash
-# SQLite is included by default
-# No additional setup needed
-npm run db:push    # Create database
-npm run db:seed    # Add demo data
+# No setup required
+# Database file will be created automatically
 ```
 
-**Configuration:**
+## Environment Variables
+
+### Required Variables
+
 ```env
-DATABASE_URL=file:./dev.db
+DATABASE_URL="postgresql://user:password@host:port/database"
+NEXTAUTH_URL="https://your-domain.com"
+NEXTAUTH_SECRET="your-secret-key-here"
+NEXT_PUBLIC_BASE_URL="https://your-domain.com"
 ```
 
-### PostgreSQL (Production)
+### Optional Variables
 
-**Setup:**
-```bash
-# Install PostgreSQL driver
-npm install pg
+```env
+# Redis (for caching)
+REDIS_HOST="localhost"
+REDIS_PORT="6379"
+REDIS_PASSWORD=""
 
-# Update DATABASE_URL
-DATABASE_URL=postgresql://username:password@localhost:5432/epg_manager
+# Email (for notifications)
+EMAIL_SERVER_HOST="smtp.gmail.com"
+EMAIL_SERVER_PORT="587"
+EMAIL_SERVER_USER="your-email@gmail.com"
+EMAIL_SERVER_PASSWORD="your-app-password"
+EMAIL_FROM="noreply@your-domain.com"
 
-# Run migrations (if using Prisma)
-npm run db:migrate
-
-# Seed database
-npm run db:seed
+# Monitoring
+SENTRY_DSN="your-sentry-dsn"
 ```
 
-### MySQL (Production)
+## SSL/HTTPS Configuration
 
-**Setup:**
+### Let's Encrypt (Free)
+
 ```bash
-# Install MySQL driver
-npm install mysql2
+# Install Certbot
+sudo apt install certbot python3-certbot-nginx -y
 
-# Update DATABASE_URL
-DATABASE_URL=mysql://username:password@localhost:3306/epg_manager
+# Get certificate
+sudo certbot --nginx -d your-domain.com
+
+# Auto-renewal
+sudo crontab -e
+# Add: 0 12 * * * /usr/bin/certbot renew --quiet
+```
+
+### Cloudflare (Recommended)
+
+1. Add domain to Cloudflare
+2. Update nameservers
+3. Enable SSL/TLS encryption
+4. Configure page rules
+
+## Monitoring & Maintenance
+
+### Health Checks
+
+```bash
+# Application health
+curl https://your-domain.com/api/health
+
+# Database health
+curl https://your-domain.com/api/health/db
+```
+
+### Logs
+
+```bash
+# PM2 logs
+pm2 logs epg-manager
+
+# Nginx logs
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+# Application logs
+tail -f logs/app.log
+```
+
+### Backup
+
+```bash
+# Database backup
+pg_dump epgmanager > backup_$(date +%Y%m%d_%H%M%S).sql
+
+# Application backup
+tar -czf epg-manager-backup_$(date +%Y%m%d_%H%M%S).tar.gz /path/to/app
+```
+
+### Updates
+
+```bash
+# Pull latest changes
+git pull origin main
+
+# Install dependencies
+npm install
 
 # Run migrations
-npm run db:migrate
+npx prisma db push
 
-# Seed database
-npm run db:seed
+# Restart application
+pm2 restart epg-manager
 ```
 
-## 📋 Post-Deployment Checklist
-
-### 1. Testing
-- [ ] Test user registration and login
-- [ ] Test channel creation and management
-- [ ] Test program creation and copy functionality
-- [ ] Test schedule creation and validation
-- [ ] Test EPG generation and download
-- [ ] Test hosted EPG URLs
-- [ ] Test admin panel functionality
-- [ ] Test mobile responsiveness
-
-### 2. Security
-- [ ] Set up SSL/TLS certificates
-- [ ] Configure environment variables properly
-- [ ] Remove any demo credentials from production
-- [ ] Set up proper authentication cookies
-- [ ] Configure rate limiting if needed
-
-### 3. Monitoring
-- [ ] Set up application monitoring
-- [ ] Configure error tracking
-- [ ] Set up uptime monitoring
-- [ ] Configure logging and analytics
-- [ ] Set up backup procedures
-
-### 4. Performance
-- [ ] Test application performance under load
-- [ ] Optimize database queries if needed
-- [ ] Configure caching strategies
-- [ ] Set up CDN for static assets
-- [ ] Optimize images and assets
-
-### 5. Maintenance
-- [ ] Set up automated backups
-- [ ] Configure database maintenance
-- [ ] Set up update procedures
-- [ ] Document deployment process
-- [ ] Create rollback procedures
-
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-**1. Database Connection Errors**
+#### 1. Database Connection Error
+
 ```bash
-# Check database URL format
-# Ensure database is running
-# Verify network connectivity
+# Check database status
+sudo systemctl status postgresql
+
+# Check connection
+psql -h localhost -U epguser -d epgmanager
+
+# Verify environment variables
+echo $DATABASE_URL
 ```
 
-**2. Authentication Issues**
+#### 2. Port Already in Use
+
 ```bash
-# Verify NEXTAUTH_URL matches deployment URL
-# Check NEXTAUTH_SECRET is properly set
-# Clear browser cookies and cache
+# Find process using port 3000
+lsof -i :3000
+
+# Kill process
+kill -9 <PID>
+
+# Or use different port
+PORT=3001 npm start
 ```
 
-**3. Build Failures**
+#### 3. Build Errors
+
 ```bash
-# Check Node.js version compatibility
-# Verify all dependencies are installed
-# Check for syntax errors in code
+# Clear cache
+rm -rf .next node_modules package-lock.json
+npm install
+npm run build
 ```
 
-**4. API Endpoint Issues**
+#### 4. Permission Issues
+
 ```bash
-# Verify API routes are properly exported
-# Check environment variables in API routes
-# Test endpoints with curl or Postman
+# Fix file permissions
+sudo chown -R $USER:$USER /path/to/app
+chmod -R 755 /path/to/app
 ```
 
-### Getting Help
+### Performance Optimization
 
-- **GitHub Issues**: Create an issue in the repository
-- **Documentation**: Check the main README.md file
-- **Community**: Join relevant developer communities
-- **Support**: Contact the development team
+#### 1. Enable Gzip Compression
 
-## 🎯 Best Practices
+```nginx
+# Nginx configuration
+gzip on;
+gzip_vary on;
+gzip_min_length 1024;
+gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+```
 
-### Security
-- Use strong, randomly generated secrets
-- Keep environment variables secure
-- Regularly update dependencies
-- Use HTTPS in production
-- Implement proper input validation
+#### 2. Database Optimization
 
-### Performance
-- Optimize database queries
-- Use caching where appropriate
-- Optimize images and assets
-- Monitor application performance
-- Scale resources as needed
+```sql
+-- Add indexes
+CREATE INDEX idx_channels_user_id ON channels(user_id);
+CREATE INDEX idx_programs_user_id ON programs(user_id);
+CREATE INDEX idx_schedules_channel_id ON schedules(channel_id);
+```
 
-### Maintenance
-- Regular backups of database and files
-- Keep dependencies updated
-- Monitor application health
-- Plan for capacity scaling
-- Document all procedures
+#### 3. Caching
+
+```bash
+# Install Redis
+sudo apt install redis-server -y
+
+# Configure Redis
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+```
+
+## Support
+
+For deployment assistance or technical support:
+
+- **Email**: info@itassist.co.in
+- **Website**: https://itassist.co.in
+- **Documentation**: See README.md
 
 ---
 
-Happy deploying! 🚀✨
+**Ultimate News Web Media Production Pvt Ltd**  
+© 2024 All Rights Reserved

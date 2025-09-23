@@ -1,39 +1,71 @@
-"use client"
+'use client';
 
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Monitor, Calendar, Download, Users, Zap, Shield } from "lucide-react"
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Monitor, Calendar, Download, Users, Zap, Shield } from 'lucide-react';
 
 export default function Home() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [showLanding, setShowLanding] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (status === "authenticated") {
-      if (session.user?.role === "ADMIN") {
-        router.push("/admin")
+    if (status === 'authenticated') {
+      if (session.user?.role === 'ADMIN') {
+        router.push('/admin');
       } else {
-        router.push("/dashboard")
+        router.push('/dashboard');
       }
     }
-  }, [status, session, router])
+  }, [status, session, router]);
 
-  if (status === "loading") {
+  // Initialize after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Add timeout for loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (status === 'loading') {
+        console.log('Session loading timeout - showing landing page');
+        setShowLanding(true);
+      }
+    }, 3000); // 3 second timeout
+
+    return () => clearTimeout(timer);
+  }, [status]);
+
+  if (status === 'loading' && !showLanding && !isInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading EPG Manager...</p>
+        </div>
       </div>
-    )
+    );
   }
 
-  if (status === "authenticated") {
-    return null // Will redirect in useEffect
+  if (status === 'authenticated') {
+    return null; // Will redirect in useEffect
   }
 
+  // Show landing page if loading takes too long or if unauthenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -65,7 +97,8 @@ export default function Home() {
               <span className="text-indigo-600 block">Management System</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Create, manage, and host your EPG files with ease. Perfect for live TV channel streamers and distributors.
+              Create, manage, and host your EPG files with ease. Perfect for
+              live TV channel streamers and distributors.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/auth/signup">
@@ -74,7 +107,11 @@ export default function Home() {
                 </Button>
               </Link>
               <Link href="/auth/signin">
-                <Button variant="outline" size="lg" className="text-lg px-8 py-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="text-lg px-8 py-3"
+                >
                   Sign In
                 </Button>
               </Link>
@@ -90,7 +127,8 @@ export default function Home() {
                 Everything You Need for EPG Management
               </h2>
               <p className="text-xl text-gray-600">
-                Powerful features designed for TV channel streamers and distributors
+                Powerful features designed for TV channel streamers and
+                distributors
               </p>
             </div>
 
@@ -100,7 +138,8 @@ export default function Home() {
                   <Monitor className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
                   <CardTitle>Channel Management</CardTitle>
                   <CardDescription>
-                    Easily manage your TV channels with logos, descriptions, and streaming URLs
+                    Easily manage your TV channels with logos, descriptions, and
+                    streaming URLs
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -110,7 +149,8 @@ export default function Home() {
                   <Calendar className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
                   <CardTitle>Program Scheduling</CardTitle>
                   <CardDescription>
-                    Create and schedule programs with flexible timing and repeat options
+                    Create and schedule programs with flexible timing and repeat
+                    options
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -120,7 +160,8 @@ export default function Home() {
                   <Download className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
                   <CardTitle>XML Export</CardTitle>
                   <CardDescription>
-                    Generate and download EPG files in XMLTV format for any compatible system
+                    Generate and download EPG files in XMLTV format for any
+                    compatible system
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -140,7 +181,8 @@ export default function Home() {
                   <Zap className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
                   <CardTitle>Copy Programs</CardTitle>
                   <CardDescription>
-                    Quickly duplicate programs and schedules to save time on repetitive entries
+                    Quickly duplicate programs and schedules to save time on
+                    repetitive entries
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -150,7 +192,8 @@ export default function Home() {
                   <Shield className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
                   <CardTitle>Hosted EPG</CardTitle>
                   <CardDescription>
-                    Get a hosted EPG URL that you can share with your distributors
+                    Get a hosted EPG URL that you can share with your
+                    distributors
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -168,28 +211,17 @@ export default function Home() {
               Join thousands of TV channel streamers who trust EPG Manager
             </p>
             <Link href="/auth/signup">
-              <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="text-lg px-8 py-3"
+              >
                 Get Started Now
               </Button>
             </Link>
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <Monitor className="h-8 w-8 text-indigo-400 mr-3" />
-              <span className="text-xl font-bold">EPG Manager</span>
-            </div>
-            <div className="text-gray-400">
-              © 2024 EPG Manager. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
-  )
+  );
 }

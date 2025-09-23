@@ -1,395 +1,189 @@
-# 📺 EPG Manager - Electronic Program Guide Management System
+# EPG Manager
 
-A comprehensive EPG (Electronic Program Guide) management system designed specifically for live TV channel streamers and distributors. Create, manage, and host your electronic program guides with ease.
+**Professional Electronic Program Guide Management System**
 
-## ✨ Features
+[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
+[![Company](https://img.shields.io/badge/Company-Ultimate%20News%20Web%20Media%20Production%20Pvt%20Ltd-blue.svg)](https://itassist.co.in)
+[![Website](https://img.shields.io/badge/Website-itassist.co.in-green.svg)](https://itassist.co.in)
+
+## Overview
+
+EPG Manager is a comprehensive Electronic Program Guide (EPG) management system designed for TV channel streamers, distributors, and content creators. It provides an intuitive web-based interface for creating, managing, and distributing EPG data in multiple formats.
+
+## Features
 
 ### 🎯 Core Functionality
-- **🔐 User Authentication**: Secure login system with role-based access control
-- **📺 Channel Management**: Create, edit, and manage TV channels with logos and metadata
-- **🎬 Program Management**: Manage TV programs with categories, durations, and descriptions
-- **📅 Schedule Management**: Schedule programs on specific channels with precise timing
-- **📄 EPG Export**: Generate XMLTV format EPG files compatible with most TV systems
-- **🌐 Hosted EPG**: Get permanent URLs for distributors with automatic updates
-- **👥 Admin Panel**: Complete user management and system monitoring
-- **📱 Responsive Design**: Mobile-first design that works on all devices
 
-### 🚀 Key Features for TV Streamers
-- **Multi-Client Support**: Each client has isolated data and management
-- **Copy Programs**: Quickly duplicate programs to save time on repetitive entries
-- **Bulk Operations**: Efficient management of multiple channels and programs
-- **Real-time Updates**: Instant EPG generation and hosting
-- **Distributor Ready**: Hosted URLs that automatically update with schedule changes
+- **Channel Management** - Create and manage TV channels with logos, descriptions, and streaming URLs
+- **Program Management** - Add programs with categories, thumbnails, and metadata
+- **Schedule Management** - Create program schedules with flexible timing and repeat options
+- **EPG Generation** - Generate EPG files in XMLTV, JSON, and M3U formats
+- **Multi-language Support** - Support for 10+ Indian languages and international languages
 
-## 🛠️ Technology Stack
+### 🚀 Advanced Features
 
-### Frontend
-- **⚡ Next.js 15** - React framework with App Router
-- **📘 TypeScript** - Type-safe JavaScript development
-- **🎨 Tailwind CSS** - Utility-first CSS framework
-- **🧩 shadcn/ui** - High-quality, accessible UI components
-- **🎯 Lucide React** - Beautiful icon library
-- **📱 React Hook Form** - Performant forms with validation
-- **✅ Zod** - TypeScript-first schema validation
+- **Bulk Scheduling** - Create daily, weekly, and monthly recurring schedules
+- **Schedule Templates** - Pre-built templates for common programming patterns
+- **API Access** - RESTful API for integration with external systems
+- **Hosted EPG URLs** - Public URLs for EPG distribution
+- **User Management** - Role-based access control (Admin/Client)
+- **Real-time Statistics** - Dashboard with usage metrics and content health
 
-### Backend
-- **🗄️ Prisma** - Next-generation ORM for database operations
-- **🔐 NextAuth.js** - Complete authentication solution
-- **🌐 REST APIs** - Clean and scalable API endpoints
-- **📊 SQLite** - Lightweight database (easily replaceable with PostgreSQL/MySQL)
+### 🌍 Internationalization
 
-### Deployment
-- **🚀 Vercel Ready** - One-click deployment
-- **☁️ Railway Compatible** - Easy deployment with database
-- **🔧 Environment Configured** - Production-ready settings
+- **Indian Languages** - Hindi, Tamil, Telugu, Bengali, Gujarati, Kannada, Malayalam, Marathi, Punjabi, Urdu
+- **Category Translation** - Automatic translation of program categories
+- **Region Support** - Country-specific content organization
 
-## 🚀 Quick Start
+## Technology Stack
+
+- **Frontend**: Next.js 15, React 18, TypeScript
+- **Styling**: Tailwind CSS, Radix UI
+- **Database**: SQLite with Prisma ORM
+- **Authentication**: NextAuth.js
+- **Icons**: Lucide React
+- **State Management**: React Hooks
+
+## Installation
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - npm or yarn
+- Git
 
-### Local Development
+### Quick Start
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <repository-url>
+   cd epg-manager
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+
+   ```bash
+   cp .env.example .env.local
+   ```
+
+   Update `.env.local` with your configuration:
+
+   ```env
+   DATABASE_URL="file:./db/custom.db"
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-secret-key-here"
+   NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+   ```
+
+4. **Initialize the database**
+
+   ```bash
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Start the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## Usage
+
+### Getting Started
+
+1. **Sign Up** - Create a new account or sign in
+2. **Create Channels** - Add your TV channels with logos and descriptions
+3. **Add Programs** - Create program entries with categories and metadata
+4. **Schedule Programs** - Set up program schedules using templates or manual entry
+5. **Generate EPG** - Create EPG files in your preferred format
+6. **Distribute** - Share hosted EPG URLs with your distributors
+
+### API Usage
+
+The system provides a RESTful API for integration:
 
 ```bash
-# Clone the repository
-git clone https://github.com/shihan84/epg-manager.git
-cd epg-manager
+# Get channels
+GET /api/channels
 
-# Install dependencies
-npm install
+# Create a channel
+POST /api/channels
+{
+  "name": "Channel Name",
+  "displayName": "Display Name",
+  "description": "Channel Description",
+  "logoUrl": "https://example.com/logo.png",
+  "language": "en",
+  "region": "IN"
+}
 
-# Set up database
-npm run db:push
-npm run db:seed
-
-# Start development server
-npm run dev
+# Generate EPG
+POST /api/epg/generate
+{
+  "channels": ["channel-id-1", "channel-id-2"],
+  "startDate": "2024-01-01",
+  "endDate": "2024-01-31",
+  "format": "xmltv"
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the application.
-
-### Demo Credentials
-- **Admin User**: `admin@example.com` / `admin123`
-- **Demo Client**: `demo@example.com` / `password`
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-src/
-├── app/                          # Next.js App Router
-│   ├── (pages)/                  # Main application pages
-│   │   ├── dashboard/           # User dashboard
-│   │   ├── channels/            # Channel management
-│   │   ├── programs/            # Program management
-│   │   ├── schedules/           # Schedule management
-│   │   ├── epg/                 # EPG export
-│   │   ├── admin/               # Admin panel
-│   │   └── auth/                # Authentication pages
-│   └── api/                     # API endpoints
-│       ├── auth/               # Authentication APIs
-│       ├── channels/           # Channel management APIs
-│       ├── programs/           # Program management APIs
-│       ├── schedules/          # Schedule management APIs
-│       ├── epg/                # EPG generation APIs
-│       ├── dashboard/          # Dashboard stats API
-│       └── admin/              # Admin management APIs
-├── components/                  # React components
-│   └── ui/                   # shadcn/ui components
-├── hooks/                       # Custom React hooks
-├── lib/                         # Utilities and configurations
-├── types/                       # TypeScript definitions
-└── prisma/                      # Database schema and migrations
+epg-manager/
+├── src/
+│   ├── app/                 # Next.js app directory
+│   │   ├── api/            # API routes
+│   │   ├── dashboard/      # Dashboard pages
+│   │   ├── management/     # Content management
+│   │   └── epg/           # EPG generation
+│   ├── components/         # React components
+│   ├── lib/               # Utility libraries
+│   └── types/             # TypeScript types
+├── prisma/                # Database schema
+├── public/                # Static assets
+└── web/                   # Web icons and assets
 ```
 
-## 📸 Interface Screenshots
+## Contributing
 
-### 🏠 Main Dashboard
-![EPG Dashboard](screenshots/epg-dashboard.png)
-*Clean, modern dashboard with real-time statistics and quick navigation*
+This is proprietary software owned by Ultimate News Web Media Production Pvt Ltd. For contribution guidelines or licensing inquiries, please contact:
 
-### 👤 User Authentication
-![Authentication](screenshots/authentication.png)
-*Secure login and registration with professional branding*
+- **Email**: licensing@itassist.co.in
+- **Website**: https://itassist.co.in
 
-### 📺 Channel Management
-![Channel Management](screenshots/channel-management.png)
-*Comprehensive channel management with edit/delete capabilities*
+## Support
 
-### 🎬 Program Management
-![Program Management](screenshots/program-management.png)
-*Program management with copy functionality and categorization*
+For technical support or feature requests:
 
-### 📅 Schedule Management
-![Schedule Management](screenshots/schedule-management.png)
-*Advanced scheduling with calendar interface and timeline view*
+- **Email**: info@itassist.co.in
+- **Website**: https://itassist.co.in
 
-### 📤 EPG Export
-![EPG Export](screenshots/epg-export.png)
-*XML generation, download options, and hosted URL distribution*
+## License
 
-### 🛡️ Admin Panel
-![Admin Panel](screenshots/admin-panel.png)
-*System administration with user management and statistics*
+This software is proprietary and confidential. All rights reserved.
 
-### 📱 Mobile Responsive Design
-![Mobile View](screenshots/mobile-view.png)
-*Touch-friendly mobile interface for on-the-go management*
+**Copyright © 2024 Ultimate News Web Media Production Pvt Ltd**
+
+**EPG Manager™** is a trademark of Ultimate News Web Media Production Pvt Ltd.
+
+## Disclaimer
+
+This software is provided "as is" without warranty of any kind. Ultimate News Web Media Production Pvt Ltd shall not be liable for any damages arising from the use of this software.
 
 ---
 
-## 🎯 How to Use
-
-### For TV Channel Streamers
-
-#### 1. **Account Setup**
-- Sign up for a new account at `/auth/signup`
-- Verify your email and log in at `/auth/signin`
-
-#### 2. **Channel Management**
-- Navigate to `/channels`
-- Add your TV channels with:
-  - Channel name and display name
-  - Description and category
-  - Logo URL and streaming URL
-  - Channel number for sorting
-
-#### 3. **Program Management**
-- Go to `/programs`
-- Create TV programs with:
-  - Title and description
-  - Category and duration
-  - Image URL for thumbnails
-  - Use the **Copy** feature to duplicate similar programs
-
-#### 4. **Schedule Creation**
-- Visit `/schedules`
-- Schedule programs on channels:
-  - Select channel and program
-  - Set start and end times
-  - Mark live broadcasts and new episodes
-  - Auto-calculation of end times based on duration
-
-#### 5. **EPG Generation**
-- Go to `/epg`
-- Generate your EPG in XMLTV format:
-  - Click "Generate EPG" to create fresh EPG data
-  - Download XML files for local use
-  - Get hosted URLs for distributors
-  - Preview EPG content before downloading
-
-#### 6. **Share with Distributors**
-- Use the hosted EPG URLs for automatic updates
-- Download XML files for systems that require local files
-- Regenerate EPG whenever you update your schedules
-
-### For Administrators
-
-#### 1. **Admin Access**
-- Log in with admin credentials
-- Access admin panel at `/admin`
-
-#### 2. **User Management**
-- View all registered users
-- Monitor user activity and statistics
-- Activate/deactivate user accounts
-- View system-wide EPG data
-
-#### 3. **System Monitoring**
-- Track total users, channels, programs, and schedules
-- Monitor recent user registrations
-- View platform-wide statistics
-
-## 🌐 Deployment Guide
-
-### Vercel Deployment (Recommended)
-
-#### 1. **Connect Repository**
-- Push your code to GitHub
-- Connect your GitHub repository to Vercel
-- Import the `epg-manager` repository
-
-#### 2. **Configure Environment Variables**
-In Vercel dashboard, add these environment variables:
-
-```env
-DATABASE_URL=your_database_connection_string
-NEXTAUTH_URL=https://your-app.vercel.app
-NEXTAUTH_SECRET=your_random_secret_key
-```
-
-#### 3. **Database Setup**
-- **Option 1**: Use Vercel Postgres (recommended for production)
-- **Option 2**: Use external database (PostgreSQL, MySQL)
-- **Option 3**: Use SQLite (for development/small deployments)
-
-#### 4. **Deploy**
-- Click "Deploy" - Vercel will automatically detect Next.js
-- Wait for deployment to complete
-- Your app will be available at `https://your-app.vercel.app`
-
-#### 5. **Post-Deployment**
-- Run database migrations if using PostgreSQL/MySQL
-- Test all features in production environment
-- Set up custom domain if needed
-
-### Railway Deployment
-
-#### 1. **Connect Repository**
-- Sign up for Railway account
-- Connect your GitHub repository
-- Select `epg-manager` repository
-
-#### 2. **Configure Service**
-- Railway will automatically detect Next.js
-- Configure build command: `npm run build`
-- Configure start command: `npm start`
-
-#### 3. **Set Environment Variables**
-```env
-DATABASE_URL=${{RAILWAY_ENVIRONMENT.DATABASE_URL}}
-NEXTAUTH_URL=${{RAILWAY_ENVIRONMENT.RAILWAY_PUBLIC_DOMAIN}}
-NEXTAUTH_SECRET=${{RAILWAY_ENVIRONMENT.NEXTAUTH_SECRET}}
-```
-
-#### 4. **Deploy**
-- Railway will automatically deploy on push
-- Your app will be available at Railway-provided URL
-
-### Netlify Deployment
-
-#### 1. **Build Setup**
-- Connect repository to Netlify
-- Configure build settings:
-  - Build command: `npm run build`
-  - Publish directory: `.next`
-
-#### 2. **Environment Variables**
-Add environment variables in Netlify dashboard:
-```env
-DATABASE_URL=your_database_url
-NEXTAUTH_URL=https://your-app.netlify.app
-NEXTAUTH_SECRET=your_secret_key
-```
-
-#### 3. **Deploy**
-- Netlify will automatically deploy on push
-- Note: You may need to configure serverless functions for API routes
-
-### Docker Deployment
-
-#### 1. **Create Dockerfile**
-```dockerfile
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
-```
-
-#### 2. **Build and Run**
-```bash
-docker build -t epg-manager .
-docker run -p 3000:3000 -e DATABASE_URL=your_db_url epg-manager
-```
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | Database connection string | Yes | - |
-| `NEXTAUTH_URL` | URL of your application | Yes | `http://localhost:3000` |
-| `NEXTAUTH_SECRET` | Secret for JWT signing | Yes | - |
-| `NEXT_PUBLIC_BASE_URL` | Public URL for hosted EPG | No | `http://localhost:3000` |
-
-### Database Setup
-
-#### SQLite (Development)
-```bash
-npm run db:push    # Push schema to SQLite
-npm run db:seed    # Seed with demo data
-```
-
-#### PostgreSQL (Production)
-```bash
-npm install pg        # Install PostgreSQL driver
-# Update DATABASE_URL to PostgreSQL connection string
-npm run db:migrate   # Run migrations
-npm run db:seed     # Seed with demo data
-```
-
-## 🎨 Customization
-
-### Branding
-- Update `src/app/layout.tsx` for site metadata
-- Replace logo in `public/` directory
-- Customize colors in Tailwind configuration
-
-### Features
-- Add new fields to Prisma schema
-- Extend API endpoints as needed
-- Customize UI components in `src/components/ui/`
-
-### Deployment
-- Add custom domains
-- Configure SSL certificates
-- Set up monitoring and analytics
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🚀 Support
-
-For support and questions:
-- Create an issue in the GitHub repository
-- Check the documentation in the wiki
-- Contact the development team
-
-## 🎯 Roadmap
-
-### Phase 1 (Current)
-- ✅ Core EPG management system
-- ✅ User authentication and roles
-- ✅ Channel and program management
-- ✅ Schedule management
-- ✅ EPG export and hosting
-- ✅ Admin panel
-
-### Phase 2 (Future)
-- 🔄 Multi-language support
-- 🔄 Advanced scheduling (recurring programs)
-- 🔄 EPG validation and testing tools
-- 🔄 Integration with popular TV systems
-- 🔄 Mobile app companion
-
-### Phase 3 (Advanced)
-- 🔄 Real-time collaboration
-- 🔄 Advanced analytics and reporting
-- 🔄 API rate limiting and security
-- 🔄 Enterprise features
-- 🔄 White-label solution
-
----
-
-Built with ❤️ for TV channel streamers and distributors worldwide.
-
-**EPG Manager** - Streamline your electronic program guide management today! 📺✨
+**Ultimate News Web Media Production Pvt Ltd**  
+Website: [itassist.co.in](https://itassist.co.in)  
+Email: info@itassist.co.in

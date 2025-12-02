@@ -9,7 +9,8 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
 # Install all dependencies (including dev) needed for build
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+# Skip postinstall script during dependency installation, we'll run prisma generate in builder stage
+RUN if [ -f package-lock.json ]; then npm ci --ignore-scripts; else npm install --ignore-scripts; fi
 
 # Rebuild the source code only when needed
 FROM base AS builder

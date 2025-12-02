@@ -3,15 +3,17 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat curl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# Install all dependencies (including dev) needed for build
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Rebuild the source code only when needed
 FROM base AS builder
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -41,9 +43,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Copy server files
+# Copy server files and necessary dependencies
 COPY --from=builder /app/server.ts ./
 COPY --from=builder /app/middleware.ts ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 # Create database directory
 RUN mkdir -p /app/db && chown nextjs:nodejs /app/db
@@ -55,8 +59,12 @@ EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
+# Install curl for health check
+RUN apk add --no-cache curl
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/api/health || exit 1
+    CMD curl -f http://localhost:${PORT:-3000}/api/health || exit 1
 
-CMD ["node", "server.js"]
+# Use tsx to run the TypeScript server file
+CMD ["npx", "tsx", "server.ts"]

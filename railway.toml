@@ -11,13 +11,3 @@ restartPolicyType = "on_failure"
 NODE_ENV = "production"
 PORT = "3000"
 
-[services.app]
-[services.app.variables]
-NODE_ENV = "production"
-PORT = "3000"
-
-[services.db]
-[services.db.variables]
-POSTGRES_DB = "epgmanager"
-POSTGRES_USER = "epguser"
-POSTGRES_PASSWORD = "epgpassword123"
